@@ -1,0 +1,54 @@
+version: '3.7'
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zoookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "22181:2181"
+    networks:
+      - karane-network
+  
+  kafka:
+    image: wurstmeister/kafka:2.13-2.7.0
+    stdin_open: true
+    tty: true
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    networks:
+      - karane-network
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://127.0.0.1:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://127.0.0.1:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      # this list of topics should include all output topics present in simulate.py script
+      KAFKA_CREATE_TOPICS: "karane-intopic:1:1,karane-outtopic:1:1,topic-01:1:1,topic-02:1:1,topic-03:1:1"
+
+  kafka-forwarder:
+    build: .
+    container_name: kafka-forwarder
+    depends_on:
+      - kafka
+    networks:
+      - karane-network
+    environment:
+      KAFKA_IN_TOPIC: karane-intopic
+      KAFKA_OUT_TOPIC: karane-outtopic
+      KAFKA_CONSUMER_GROUP: go-fanout-app
+      # KAFKA_ADDRESS: kfk-teb-doc001s.infra.azion.net:9092
+      KAFKA_ADDRESS: kafka:9092
+      TOPIC_BUFFER_SIZE: 50
+      BUFFER_TIMEOUT_IN_SECONDS: 5
+
+networks:
+    karane-network:
+        external: true
