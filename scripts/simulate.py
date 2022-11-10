@@ -16,7 +16,7 @@ TOPICS = [
 ]
 
 # this topic should be inclued in docker-compose file kafka service section.
-KAFKA_OUT_TOPIC = 'forwarder-in-topic'
+KAFKA_OUT_TOPIC = 'karane-intopic'
 
 def partition_logs(log_lines, package_amount):
     logs_per_package = math.ceil(len(log_lines) / package_amount)
